@@ -1,5 +1,4 @@
-# Contenido para el archivo README.md
-readme_content = """# LocateIQ (formerly Geo-Yield AI) 🚀
+# GEO-YIELD-AI
 
 **Geo-Yield-AI** es una plataforma SaaS de *Location Intelligence* diseñada para transformar la toma de decisiones en la expansión de cadenas de retail, negocios, franquicias y consultoras inmobiliarias. 
 
