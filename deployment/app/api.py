@@ -10,7 +10,7 @@ import tempfile
 import pandas as pd
 from pathlib import Path
 from dotenv import load_dotenv
-import metrics
+from .metrics import metrics
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
@@ -27,18 +27,18 @@ temp_files = []
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     
-    global scaler, model, encoders, db_engine
+    global scaler, model, encoders, db_engine   
 
     try:
         # Get GitHub repo info from environment or use defaults
         github_repo = os.getenv("GITHUB_REPO")
         
         # Get model version from MODEL_VERSION environment variable, which is set at deploy time, in the input section of deply.yml
-        model_version = os.getenv("MODEL_VERSION", "latest")
+        model_release = os.getenv("MODEL_RELEASE", "latest")
 
         # Download release from GitHub. latest is the default, but you can specify a tag if needed
         logger.info(f"Fetching latest release from {github_repo}...")
-        if model_version != "latest":
+        if model_release != "latest":
             response = requests.get(f"https://api.github.com/repos/{github_repo}/releases/tags/{model_version}")
         else:
             response = requests.get(f"https://api.github.com/repos/{github_repo}/releases/latest")
@@ -83,8 +83,9 @@ async def lifespan(app: FastAPI):
         encoders = joblib.load(encoders_path)
         logger.info("Encoders loaded successfully")
 
-        # Open databaase connection
+        # Open databaase connection and ge
         db_engine = create_engine(os.getenv("DATABASE_URL"), connect_args={"check_same_thread": False})
+        
         
     except Exception as e:
         logger.error(f"Failed to load artifacts: {e}")
@@ -102,7 +103,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-SessionLocal = sessionmaker(bind=db_engine, autocommit=False, autoflush=False)
+def get_session():
+    """Create a database session - called after db_engine is initialized in lifespan"""
+    if db_engine is None:
+        raise RuntimeError("Database engine not initialized yet")
+    return sessionmaker(bind=db_engine, autocommit=False, autoflush=False)()
 
 @app.get("/health")
 def health():
@@ -139,4 +144,5 @@ async def predict(request: Request):
 @app.get("/metrics", response_class=PlainTextResponse)
 def metrics_endpoint():
     return f'total_predictions {metrics["total_predictions"]}\n'
+
 
