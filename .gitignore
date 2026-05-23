@@ -30,7 +30,7 @@ build/
 dist/
 
 # --- Virtual environments ---
-.env
+#.env
 .venv/
 env/
 venv/
